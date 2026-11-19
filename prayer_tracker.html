@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Prayer Tracker</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Amiri (for Arabic script) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            arabic: ['Amiri', 'serif'],
+          },
+          colors: {
+            emerald: {
+              850: '#064e3b',
+              925: '#042f24',
+              950: '#022c22',
+            },
+            gold: {
+              400: '#fbbf24',
+              500: '#d97706',
+              600: '#b45309',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom subtle scrollbar & mobile app ergonomics */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: text;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      70% { transform: scale(1.12); opacity: 0; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+    .animate-pulse-ring {
+      animation: pulseRing 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.92); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop-in {
+      animation: popIn 0.22s ease-out forwards;
+    }
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+  </style>
+</head>
+<body class="bg-stone-200 dark:bg-neutral-950 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex justify-center items-center sm:py-4 transition-colors duration-200">
+
+  <!-- Mobile App Container -->
+  <div id="app-shell" class="relative w-full sm:w-[420px] h-[100dvh] sm:h-[850px] sm:max-h-[94vh] bg-[#FAF8F5] dark:bg-slate-900 sm:rounded-[2.25rem] sm:shadow-2xl sm:border sm:border-stone-300/80 dark:sm:border-slate-800 flex flex-col overflow-hidden">
+
+    <!-- ==================== FIRST-LAUNCH NAME LOGIN SCREEN ==================== -->
+    <div id="login-screen" class="hidden absolute inset-0 z-50 bg-gradient-to-b from-emerald-950 via-emerald-900 to-teal-950 text-white flex flex-col justify-between p-7">
+      <div class="pt-6 text-center space-y-3">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-white/10 border border-amber-300/30 flex items-center justify-center shadow-lg">
+          <svg class="w-9 h-9 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight">Prayer Tracker</h1>
+        <p class="text-xs text-emerald-200/90 max-w-xs mx-auto leading-relaxed">
+          Your daily companion for Tasbeeh, Dhikr, hourly reminders, and daily, weekly & monthly spiritual progress.
+        </p>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-6 space-y-4 shadow-xl">
+        <div>
+          <label for="login-name-input" class="block text-xs font-bold uppercase tracking-wider text-amber-300 mb-2">
+            Enter Your Name
+          </label>
+          <input
+            type="text"
+            id="login-name-input"
+            required
+            maxlength="40"
+            placeholder=""
+            class="w-full px-4 py-3.5 rounded-2xl bg-white text-slate-900 placeholder-slate-400 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner"
+          />
+          <p class="text-[11px] text-emerald-200/80 mt-2">
+            Your profile and prayer counts are saved securely on your device and will not auto-reset.
+          </p>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg active:scale-[0.98] transition">
+          Continue to Prayer Tracker
+        </button>
+      </form>
+
+      <div class="text-center text-[11px] text-emerald-300/70 pb-2">
+        Simple · Offline-Ready · Persistent Profile
+      </div>
+    </div>
+
+    <!-- Top Header -->
+    <header class="px-5 pt-4 pb-3 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white shrink-0 shadow-md z-10">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <!-- Crescent & Star Icon -->
+            <svg class="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+            </svg>
+            <h1 class="text-lg font-bold tracking-tight">Prayer Tracker</h1>
+          </div>
+          <p id="header-date" class="text-[11px] text-emerald-200/90 mt-0.5 font-medium">Loading date...</p>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <!-- Saved User Profile Pill Button (Click to Edit Name) -->
+          <button onclick="openProfileModal()" title="Edit Saved Profile Name" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition border border-white/15 max-w-[130px]">
+            <svg class="w-3.5 h-3.5 text-amber-300 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            <span id="header-profile-name" class="text-xs font-semibold truncate">User</span>
+          </button>
+
+          <!-- Reset All Counts to 0 Button -->
+          <button onclick="openResetConfirmModal('all')" title="Reset All Counts to 0" class="p-2 rounded-full bg-white/10 hover:bg-red-500/30 active:scale-95 transition">
+            <svg class="w-4 h-4 text-amber-200" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+
+          <!-- Sound Toggle -->
+          <button id="btn-sound-toggle" title="Toggle Click & Chime Sound" class="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition">
+            <svg id="icon-sound-on" class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+            </svg>
+            <svg id="icon-sound-off" class="w-4 h-4 text-emerald-300 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+            </svg>
+          </button>
+
+          <!-- Dark Mode Toggle -->
+          <button id="btn-theme-toggle" title="Toggle Dark Mode" class="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition">
+            <svg id="icon-moon" class="w-4 h-4 text-emerald-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+            <svg id="icon-sun" class="w-4 h-4 text-amber-300 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Daily Overall Mini Summary Strip -->
+      <div class="mt-3 bg-black/20 rounded-xl px-3.5 py-2 flex items-center justify-between text-xs border border-white/10">
+        <div>
+          <span class="text-emerald-200">Today Done:</span>
+          <span id="top-total-done" class="font-bold text-white ml-1">0</span>
+        </div>
+        <div class="h-3 w-[1px] bg-white/20"></div>
+        <div>
+          <span class="text-emerald-200">Remaining:</span>
+          <span id="top-total-remaining" class="font-bold text-amber-300 ml-1">0</span>
+        </div>
+        <div class="h-3 w-[1px] bg-white/20"></div>
+        <div>
+          <span class="text-emerald-200">Goal:</span>
+          <span id="top-total-pct" class="font-bold text-emerald-300 ml-1">0%</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Content Area -->
+    <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24 space-y-4">
+      
+      <!-- ==================== TAB 1: PRAYERS LIST ==================== -->
+      <section id="view-prayers" class="space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-800 dark:text-white">My Prayers & Dhikr</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Add, remove, or tap a prayer to count</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openResetConfirmModal('all')" class="flex items-center gap-1 bg-stone-200/90 hover:bg-stone-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-2.5 py-2.5 rounded-xl active:scale-95 transition">
+              <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              Reset 0
+            </button>
+            <button onclick="openPrayerModal()" class="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm active:scale-95 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
+              Add
+            </button>
+          </div>
+        </div>
+
+        <!-- Prayers List Container -->
+        <div id="prayers-list-container" class="space-y-3"></div>
+      </section>
+
+      <!-- ==================== TAB 2: INTERACTIVE COUNTER ==================== -->
+      <section id="view-counter" class="hidden flex-col justify-between min-h-full space-y-4">
+        <!-- Prayer Selector Dropdown / Pill Bar -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm border border-stone-200/80 dark:border-slate-700">
+          <div class="flex items-center justify-between gap-2">
+            <label for="counter-prayer-select" class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Active Prayer</label>
+            <span id="counter-alarm-badge" class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span id="counter-next-alarm-text">Every 1h</span>
+            </span>
+          </div>
+          <select id="counter-prayer-select" onchange="selectActivePrayer(this.value)" class="mt-1.5 w-full bg-stone-100 dark:bg-slate-700/80 text-slate-900 dark:text-white font-semibold text-sm rounded-xl px-3 py-2.5 border border-stone-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+          </select>
+        </div>
+
+        <!-- Arabic / Transliteration Card -->
+        <div id="counter-phrase-card" class="bg-gradient-to-br from-emerald-50 to-amber-50/60 dark:from-slate-800 dark:to-emerald-950/50 rounded-2xl p-4 text-center border border-emerald-200/70 dark:border-emerald-800/50 shadow-sm">
+          <p id="counter-arabic" class="font-arabic text-2xl sm:text-3xl text-emerald-900 dark:text-amber-300 leading-relaxed mb-1">سُبْحَانَ اللَّهِ</p>
+          <p id="counter-translit" class="text-xs font-medium text-slate-600 dark:text-slate-300">SubhanAllah — Glory be to Allah</p>
+        </div>
+
+        <!-- Circular Progress & Remaining Count Display -->
+        <div class="relative flex flex-col items-center justify-center py-2">
+          <div class="relative w-52 h-52 flex items-center justify-center">
+            <svg class="w-full h-full" viewBox="0 0 180 180">
+              <!-- Track -->
+              <circle cx="90" cy="90" r="78" fill="none" stroke="currentColor" stroke-width="11" class="text-stone-200 dark:text-slate-800" />
+              <!-- Progress -->
+              <circle id="counter-progress-ring" cx="90" cy="90" r="78" fill="none" stroke="url(#emeraldGoldGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="490.09" stroke-dashoffset="490.09" class="progress-ring-circle" />
+              <defs>
+                <linearGradient id="emeraldGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#059669" />
+                  <stop offset="100%" stop-color="#d97706" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <!-- Center Numbers -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-400">Remaining</span>
+              <span id="counter-remaining-num" class="text-5xl font-extrabold text-emerald-800 dark:text-white tracking-tight my-0.5">100</span>
+              <span id="counter-completed-badge" class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-900/50 px-2.5 py-0.5 rounded-full">
+                0 / 100 Done
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Clear Action Buttons: Recite (-1 Remaining) & Undo (+1 Remaining) + Reset Option -->
+        <div class="space-y-2.5 pt-1">
+          <!-- Primary Button: Recite (-1 from remaining) -->
+          <button id="btn-recite-minus-one" onclick="handleReciteStep()" class="relative w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-800 hover:to-emerald-700 active:scale-[0.98] text-white shadow-lg shadow-emerald-900/20 flex items-center justify-between transition-all cursor-pointer">
+            <div class="flex items-center gap-3">
+              <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-extrabold text-lg">-1</span>
+              <div class="text-left">
+                <div class="font-bold text-base leading-tight">Recite Prayer</div>
+                <div class="text-[11px] text-emerald-100">Subtract 1 from remaining count</div>
+              </div>
+            </div>
+            <svg class="w-6 h-6 text-amber-300" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+          </button>
+
+          <!-- Secondary Row: Undo (+1) & Reset Counts to 0 -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <button id="btn-undo-plus-one" onclick="handleUndoStep()" class="py-3 px-4 rounded-xl bg-white dark:bg-slate-800 hover:bg-stone-100 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-200 border border-stone-300 dark:border-slate-700 shadow-sm flex items-center justify-center gap-2 font-semibold text-sm transition">
+              <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+              </svg>
+              <span>Undo (+1)</span>
+            </button>
+
+            <button onclick="openResetConfirmModal('all')" class="py-3 px-4 rounded-xl bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 active:scale-[0.98] text-red-600 dark:text-red-400 border border-stone-300 dark:border-slate-700 shadow-sm flex items-center justify-center gap-2 font-semibold text-sm transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              <span>Reset to 0</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: PROGRESS ANALYTICS (DAY / WEEK / MONTH) ==================== -->
+      <section id="view-progress" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-800 dark:text-white">Progress & History</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Done vs. Remaining across Day, Week & Month</p>
+          </div>
+          <button onclick="seedSampleHistory()" title="Load sample past 30 days data to preview charts" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-900/40 dark:text-amber-300 transition">
+            Demo History
+          </button>
+        </div>
+
+        <!-- Sub-Tabs: Today / This Week / This Month -->
+        <div class="grid grid-cols-3 bg-stone-200/80 dark:bg-slate-800 p-1 rounded-xl">
+          <button onclick="setProgressRange('day')" id="prog-tab-day" class="py-2 text-xs font-bold rounded-lg bg-white dark:bg-slate-700 text-emerald-800 dark:text-white shadow-sm transition">
+            Today
+          </button>
+          <button onclick="setProgressRange('week')" id="prog-tab-week" class="py-2 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-400 transition">
+            This Week
+          </button>
+          <button onclick="setProgressRange('month')" id="prog-tab-month" class="py-2 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-400 transition">
+            This Month
+          </button>
+        </div>
+
+        <!-- Summary KPI Cards -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-stone-200/80 dark:border-slate-700 shadow-sm">
+            <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Completed</div>
+            <div id="stat-done" class="text-xl font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5">0</div>
+            <div class="text-[10px] text-emerald-600 dark:text-emerald-500 font-medium mt-0.5">Recited</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-stone-200/80 dark:border-slate-700 shadow-sm">
+            <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Remaining</div>
+            <div id="stat-remaining" class="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-0.5">0</div>
+            <div class="text-[10px] text-amber-600/80 dark:text-amber-500 font-medium mt-0.5">Left to do</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-stone-200/80 dark:border-slate-700 shadow-sm">
+            <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Completion</div>
+            <div id="stat-rate" class="text-xl font-extrabold text-slate-800 dark:text-white mt-0.5">0%</div>
+            <div id="stat-streak" class="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">0d streak</div>
+          </div>
+        </div>
+
+        <!-- Visual Chart Container -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-stone-200/80 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 id="chart-title" class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Daily Breakdown</h3>
+            <div class="flex items-center gap-3 text-[11px]">
+              <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                <span class="w-2.5 h-2.5 rounded-sm bg-emerald-600 inline-block"></span> Done
+              </span>
+              <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                <span class="w-2.5 h-2.5 rounded-sm bg-amber-400/80 inline-block"></span> Left
+              </span>
+            </div>
+          </div>
+          <div id="progress-chart-area" class="w-full"></div>
+        </div>
+
+        <!-- Per-Prayer Breakdown List -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-stone-200/80 dark:border-slate-700 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Prayer-by-Prayer Summary</h3>
+          <div id="prayer-breakdown-list" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 4: REMINDERS & ALARMS ==================== -->
+      <section id="view-reminders" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-800 dark:text-white">Hourly & Custom Alarms</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Get reminded of your remaining prayer counts</p>
+          </div>
+          <button onclick="triggerTestAlarm()" class="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm active:scale-95 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            Test Alarm
+          </button>
+        </div>
+
+        <!-- Browser Notification Permission Banner -->
+        <div id="notif-permission-card" class="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+          <div class="text-xs">
+            <div class="font-bold text-emerald-900 dark:text-emerald-300">Background Notifications</div>
+            <div id="notif-status-text" class="text-emerald-700 dark:text-emerald-400/80 mt-0.5">Enable system alerts even when switching tabs.</div>
+          </div>
+          <button id="btn-request-notif" onclick="requestNotificationPermission()" class="shrink-0 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-2 rounded-xl transition">
+            Enable
+          </button>
+        </div>
+
+        <!-- Per-Prayer Alarm Configuration Cards -->
+        <div id="reminders-list-container" class="space-y-3"></div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Native-Style Navigation Bar -->
+    <nav class="absolute bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-stone-200 dark:border-slate-800 px-2 py-2 flex justify-around items-center z-20">
+      <button onclick="switchTab('prayers')" id="nav-prayers" class="nav-btn flex flex-col items-center justify-center w-16 py-1 rounded-xl text-emerald-700 dark:text-emerald-400 transition">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/>
+        </svg>
+        <span class="text-[11px] font-bold">Prayers</span>
+      </button>
+
+      <button onclick="switchTab('counter')" id="nav-counter" class="nav-btn flex flex-col items-center justify-center w-16 py-1 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 transition">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-[11px] font-semibold">Counter</span>
+      </button>
+
+      <button onclick="switchTab('progress')" id="nav-progress" class="nav-btn flex flex-col items-center justify-center w-16 py-1 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 transition">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <span class="text-[11px] font-semibold">Progress</span>
+      </button>
+
+      <button onclick="switchTab('reminders')" id="nav-reminders" class="nav-btn relative flex flex-col items-center justify-center w-16 py-1 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 transition">
+        <span id="nav-alarm-dot" class="hidden absolute top-1 right-4 w-2 h-2 rounded-full bg-amber-500"></span>
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+        <span class="text-[11px] font-semibold">Reminders</span>
+      </button>
+    </nav>
+
+    <!-- ==================== MODAL: ADD / EDIT PRAYER ==================== -->
+    <div id="prayer-modal" class="hidden absolute inset-0 bg-black/60 backdrop-blur-xs z-40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white dark:bg-slate-800 w-full rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border-t sm:border border-stone-200 dark:border-slate-700 animate-pop-in space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 id="modal-title" class="text-base font-bold text-slate-900 dark:text-white">Add Custom Prayer</h3>
+          <button onclick="closePrayerModal()" class="p-1.5 rounded-full bg-stone-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <form id="prayer-form" onsubmit="savePrayerForm(event)" class="space-y-3.5">
+          <input type="hidden" id="form-prayer-id" />
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Prayer / Tasbeeh Name *</label>
+            <input type="text" id="form-prayer-name" required placeholder="e.g., Durood Shareef, SubhanAllah" class="w-full px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-slate-700 border border-stone-200 dark:border-slate-600 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Daily Target Count *</label>
+              <input type="number" id="form-prayer-target" required min="1" max="100000" value="100" class="w-full px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-slate-700 border border-stone-200 dark:border-slate-600 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Reminder Interval</label>
+              <select id="form-prayer-interval" class="w-full px-3 py-2.5 rounded-xl bg-stone-100 dark:bg-slate-700 border border-stone-200 dark:border-slate-600 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                <option value="60">Every 1 Hour</option>
+                <option value="15">Every 15 Mins</option>
+                <option value="30">Every 30 Mins</option>
+                <option value="120">Every 2 Hours</option>
+                <option value="180">Every 3 Hours</option>
+                <option value="0">Off</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Arabic Text (Optional)</label>
+            <input type="text" id="form-prayer-arabic" dir="rtl" placeholder="e.g., سُبْحَانَ اللَّهِ وَبِحَمْدِهِ" class="w-full px-3.5 py-2 rounded-xl bg-stone-100 dark:bg-slate-700 border border-stone-200 dark:border-slate-600 font-arabic text-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Meaning / Note (Optional)</label>
+            <input type="text" id="form-prayer-note" placeholder="e.g., Glory and praise be to Allah" class="w-full px-3.5 py-2 rounded-xl bg-stone-100 dark:bg-slate-700 border border-stone-200 dark:border-slate-600 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+          </div>
+
+          <div class="pt-2 flex items-center gap-2.5">
+            <button type="button" id="btn-delete-prayer" onclick="deleteCurrentEditingPrayer()" class="hidden px-4 py-3 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 text-xs font-bold transition">
+              Remove Prayer
+            </button>
+            <button type="submit" class="flex-1 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition">
+              Save Prayer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: USER PROFILE (VIEW / EDIT SAVED NAME) ==================== -->
+    <div id="profile-modal" class="hidden absolute inset-0 bg-black/60 backdrop-blur-xs z-40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white dark:bg-slate-800 w-full rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border-t sm:border border-stone-200 dark:border-slate-700 animate-pop-in space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-extrabold text-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">User Profile</h3>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">Saved permanently until you edit it</p>
+            </div>
+          </div>
+          <button onclick="closeProfileModal()" class="p-1.5 rounded-full bg-stone-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <form onsubmit="saveProfileName(event)" class="space-y-3.5">
+          <div>
+            <label for="profile-name-input" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Display Name</label>
+            <input type="text" id="profile-name-input" required maxlength="40" placeholder="" class="w-full px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-slate-700 border border-stone-200 dark:border-slate-600 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition">
+            Update Name
+          </button>
+        </form>
+
+        <div class="pt-2 border-t border-stone-100 dark:border-slate-700 flex items-center justify-between">
+          <button type="button" onclick="closeProfileModal(); openResetConfirmModal('all');" class="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline">
+            Reset All Counts to 0
+          </button>
+          <button type="button" onclick="logoutProfile()" class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white">
+            Switch User
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: RESET COUNTS CONFIRMATION ==================== -->
+    <div id="reset-confirm-modal" class="hidden absolute inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-5">
+      <div class="bg-white dark:bg-slate-800 w-full rounded-3xl p-5 shadow-2xl border border-stone-200 dark:border-slate-700 animate-pop-in space-y-4 text-center">
+        <div class="w-12 h-12 mx-auto rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </div>
+        <div>
+          <h3 id="reset-modal-title" class="text-base font-bold text-slate-900 dark:text-white">Reset All Counts to 0?</h3>
+          <p id="reset-modal-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            This will reset today's completed counts for all prayers back to 0 (restoring each prayer's remaining count to its daily target). Your profile name and prayer list will stay saved.
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
+          <button onclick="closeResetConfirmModal()" class="py-2.5 px-4 rounded-xl bg-stone-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs hover:bg-stone-200 transition">
+            Cancel
+          </button>
+          <button onclick="executeResetCounts()" class="py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition">
+            Yes, Reset to 0
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: REMOVE PRAYER CONFIRMATION ==================== -->
+    <div id="remove-prayer-modal" class="hidden absolute inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-5">
+      <div class="bg-white dark:bg-slate-800 w-full rounded-3xl p-5 shadow-2xl border border-stone-200 dark:border-slate-700 animate-pop-in space-y-4 text-center">
+        <div class="w-12 h-12 mx-auto rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Remove Prayer?</h3>
+          <p id="remove-prayer-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Are you sure you want to remove this prayer from your tracker?
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
+          <button onclick="closeRemovePrayerModal()" class="py-2.5 px-4 rounded-xl bg-stone-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs hover:bg-stone-200 transition">
+            Cancel
+          </button>
+          <button onclick="confirmRemovePrayer()" class="py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition">
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: ALARM RINGING OVERLAY ==================== -->
+    <div id="alarm-ring-modal" class="hidden absolute inset-0 bg-emerald-950/90 backdrop-blur-md z-50 flex items-center justify-center p-5">
+      <div class="bg-white dark:bg-slate-800 w-full rounded-3xl p-6 text-center shadow-2xl border border-amber-400/50 animate-pop-in space-y-4">
+        <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full bg-amber-400/30 animate-pulse-ring"></div>
+          <div class="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Prayer Reminder</span>
+          <h3 id="alarm-modal-prayer-name" class="text-xl font-extrabold text-slate-900 dark:text-white mt-1">SubhanAllah</h3>
+          <p id="alarm-modal-message" class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+            You still have <span class="font-extrabold text-emerald-700 dark:text-emerald-400">65</span> recitations remaining today.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 pt-2">
+          <button onclick="dismissAlarmModal()" class="py-3 px-4 rounded-xl bg-stone-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-stone-200 transition">
+            Snooze / Later
+          </button>
+          <button onclick="reciteFromAlarm()" class="py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition">
+            Recite Now
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtle Floating Toast Notification -->
+    <div id="toast-banner" class="pointer-events-none opacity-0 transition-opacity duration-200 absolute top-20 inset-x-4 z-50 flex justify-center">
+      <div id="toast-text" class="bg-slate-900/95 dark:bg-white/95 text-white dark:text-slate-900 text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg">
+        Saved
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. STATE & LOCALSTORAGE PERSISTENCE
+    // =========================================================================
+    const STORAGE_KEY = 'noor_tasbeeh_tracker_v1';
+
+    function getTodayKey(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    const DEFAULT_PRAYERS = [
+      {
+        id: 'p_subhanallah',
+        name: 'SubhanAllah',
+        arabic: 'سُبْحَانَ اللَّهِ',
+        note: 'Glory be to Allah',
+        target: 100,
+        alarmEnabled: true,
+        alarmIntervalMinutes: 60, // Every 1 hour by default
+        nextAlarmAt: Date.now() + 60 * 60 * 1000
+      },
+      {
+        id: 'p_astaghfirullah',
+        name: 'Astaghfirullah',
+        arabic: 'أَسْتَغْفِرُ اللَّهَ',
+        note: 'I seek forgiveness from Allah',
+        target: 100,
+        alarmEnabled: true,
+        alarmIntervalMinutes: 60,
+        nextAlarmAt: Date.now() + 60 * 60 * 1000
+      },
+      {
+        id: 'p_durood',
+        name: 'Durood Shareef',
+        arabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ',
+        note: 'Blessings upon the Prophet ﷺ',
+        target: 50,
+        alarmEnabled: false,
+        alarmIntervalMinutes: 120,
+        nextAlarmAt: Date.now() + 120 * 60 * 1000
+      }
+    ];
+
+    let state = {
+      userName: '',
+      prayers: [],
+      // logs[dateKey][prayerId] = { done: number, target: number }
+      logs: {},
+      activePrayerId: 'p_subhanallah',
+      currentTab: 'prayers',
+      progressRange: 'day', // 'day' | 'week' | 'month'
+      soundEnabled: true,
+      darkMode: false
+    };
+
+    let ringingPrayerId = null;
+    let pendingResetTarget = 'all';
+    let pendingRemovePrayerId = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state = { ...state, ...parsed };
+        } else {
+          state.prayers = JSON.parse(JSON.stringify(DEFAULT_PRAYERS));
+          ensureTodayLogs();
+          saveState();
+        }
+      } catch (e) {
+        console.error('Failed to load state:', e);
+        state.prayers = JSON.parse(JSON.stringify(DEFAULT_PRAYERS));
+      }
+      if (!state.prayers || state.prayers.length === 0) {
+        state.prayers = JSON.parse(JSON.stringify(DEFAULT_PRAYERS));
+      }
+      if (!state.prayers.some(p => p.id === state.activePrayerId)) {
+        state.activePrayerId = state.prayers[0].id;
+      }
+      ensureTodayLogs();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to save state:', e);
+      }
+    }
+
+    function ensureTodayLogs() {
+      const today = getTodayKey();
+      if (!state.logs[today]) {
+        state.logs[today] = {};
+      }
+      state.prayers.forEach(p => {
+        if (!state.logs[today][p.id]) {
+          state.logs[today][p.id] = { done: 0, target: p.target };
+        } else {
+          state.logs[today][p.id].target = p.target;
+        }
+      });
+    }
+
+    function getPrayerTodayStats(prayerId) {
+      ensureTodayLogs();
+      const today = getTodayKey();
+      const prayer = state.prayers.find(p => p.id === prayerId);
+      if (!prayer) return { done: 0, target: 0, remaining: 0 };
+      const entry = state.logs[today][prayerId] || { done: 0, target: prayer.target };
+      const done = Math.max(0, entry.done);
+      const target = Math.max(1, prayer.target);
+      const remaining = Math.max(0, target - done);
+      return { done, target, remaining };
+    }
+
+    // =========================================================================
+    // 2. WEB AUDIO API (TACTILE CLICK & GENTLE CHIME)
+    // =========================================================================
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTasbeehClick(isUndo = false) {
+      if (!state.soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(isUndo ? 420 : 680, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(isUndo ? 300 : 880, ctx.currentTime + 0.045);
+
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.055);
+      } catch (e) {}
+    }
+
+    function playAlarmChime() {
+      if (!state.soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          const startTime = ctx.currentTime + idx * 0.16;
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0.001, startTime);
+          gain.gain.linearRampToValueAtTime(0.18, startTime + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.55);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + 0.6);
+        });
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 3. CORE COUNTER ACTIONS (-1 REMAINING & UNDO +1)
+    // =========================================================================
+    function handleReciteStep() {
+      const prayer = state.prayers.find(p => p.id === state.activePrayerId);
+      if (!prayer) return;
+
+      ensureTodayLogs();
+      const today = getTodayKey();
+      const entry = state.logs[today][prayer.id];
+
+      // Increment done count (which reduces remaining count by 1)
+      entry.done += 1;
+      saveState();
+
+      playTasbeehClick(false);
+      if (navigator.vibrate) {
+        navigator.vibrate(25);
+      }
+
+      // Check if user just hit their exact target
+      if (entry.done === prayer.target) {
+        showToast(`MashaAllah! Completed ${prayer.name} (${prayer.target})!`);
+        playAlarmChime();
+      }
+
+      renderAll();
+    }
+
+    function handleUndoStep() {
+      const prayer = state.prayers.find(p => p.id === state.activePrayerId);
+      if (!prayer) return;
+
+      ensureTodayLogs();
+      const today = getTodayKey();
+      const entry = state.logs[today][prayer.id];
+
+      if (entry.done <= 0) {
+        showToast('Remaining count is already at daily target.');
+        return;
+      }
+
+      // Subtract 1 from done (adds +1 back to remaining count)
+      entry.done -= 1;
+      saveState();
+
+      playTasbeehClick(true);
+      if (navigator.vibrate) {
+        navigator.vibrate([15, 30, 15]);
+      }
+
+      renderAll();
+    }
+
+    function selectActivePrayer(prayerId, switchToCounter = false) {
+      state.activePrayerId = prayerId;
+      saveState();
+      renderAll();
+      if (switchToCounter) {
+        switchTab('counter');
+      }
+    }
+
+    // =========================================================================
+    // 4. ADD / EDIT / DELETE CUSTOM PRAYERS
+    // =========================================================================
+    function openPrayerModal(editPrayerId = null) {
+      const modal = document.getElementById('prayer-modal');
+      const titleEl = document.getElementById('modal-title');
+      const deleteBtn = document.getElementById('btn-delete-prayer');
+
+      if (editPrayerId) {
+        const p = state.prayers.find(item => item.id === editPrayerId);
+        if (!p) return;
+        titleEl.textContent = 'Edit Prayer Goal';
+        document.getElementById('form-prayer-id').value = p.id;
+        document.getElementById('form-prayer-name').value = p.name;
+        document.getElementById('form-prayer-target').value = p.target;
+        document.getElementById('form-prayer-interval').value = p.alarmEnabled ? String(p.alarmIntervalMinutes) : '0';
+        document.getElementById('form-prayer-arabic').value = p.arabic || '';
+        document.getElementById('form-prayer-note').value = p.note || '';
+        deleteBtn.classList.toggle('hidden', state.prayers.length <= 1);
+      } else {
+        titleEl.textContent = 'Add Custom Prayer';
+        document.getElementById('form-prayer-id').value = '';
+        document.getElementById('form-prayer-name').value = '';
+        document.getElementById('form-prayer-target').value = '100';
+        document.getElementById('form-prayer-interval').value = '60';
+        document.getElementById('form-prayer-arabic').value = '';
+        document.getElementById('form-prayer-note').value = '';
+        deleteBtn.classList.add('hidden');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closePrayerModal() {
+      document.getElementById('prayer-modal').classList.add('hidden');
+    }
+
+    function savePrayerForm(e) {
+      e.preventDefault();
+      const id = document.getElementById('form-prayer-id').value;
+      const name = document.getElementById('form-prayer-name').value.trim();
+      const target = Math.max(1, parseInt(document.getElementById('form-prayer-target').value, 10) || 100);
+      const intervalVal = parseInt(document.getElementById('form-prayer-interval').value, 10);
+      const arabic = document.getElementById('form-prayer-arabic').value.trim();
+      const note = document.getElementById('form-prayer-note').value.trim();
+
+      if (!name) return;
+
+      const alarmEnabled = intervalVal > 0;
+      const alarmIntervalMinutes = alarmEnabled ? intervalVal : 60;
+
+      if (id) {
+        const idx = state.prayers.findIndex(p => p.id === id);
+        if (idx !== -1) {
+          state.prayers[idx] = {
+            ...state.prayers[idx],
+            name,
+            target,
+            arabic,
+            note,
+            alarmEnabled,
+            alarmIntervalMinutes,
+            nextAlarmAt: alarmEnabled ? Date.now() + alarmIntervalMinutes * 60 * 1000 : state.prayers[idx].nextAlarmAt
+          };
+          showToast('Prayer updated');
+        }
+      } else {
+        const newId = 'p_' + Date.now();
+        state.prayers.push({
+          id: newId,
+          name,
+          arabic,
+          note,
+          target,
+          alarmEnabled,
+          alarmIntervalMinutes,
+          nextAlarmAt: Date.now() + alarmIntervalMinutes * 60 * 1000
+        });
+        state.activePrayerId = newId;
+        showToast(`Added "${name}"`);
+      }
+
+      ensureTodayLogs();
+      saveState();
+      closePrayerModal();
+      renderAll();
+    }
+
+    function deleteCurrentEditingPrayer() {
+      const id = document.getElementById('form-prayer-id').value;
+      if (!id || state.prayers.length <= 1) return;
+      state.prayers = state.prayers.filter(p => p.id !== id);
+      if (state.activePrayerId === id) {
+        state.activePrayerId = state.prayers[0].id;
+      }
+      saveState();
+      closePrayerModal();
+      showToast('Prayer removed');
+      renderAll();
+    }
+
+    // =========================================================================
+    // 5. REMINDER & HOURLY/CUSTOM ALARM ENGINE
+    // =========================================================================
+    function formatIntervalLabel(mins) {
+      if (mins < 60) return `Every ${mins}m`;
+      if (mins % 60 === 0) {
+        const hrs = mins / 60;
+        return hrs === 1 ? 'Every 1 hour' : `Every ${hrs} hours`;
+      }
+      return `Every ${mins}m`;
+    }
+
+    function formatCountdown(ms) {
+      if (ms <= 0) return 'Due now';
+      const totalSec = Math.floor(ms / 1000);
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      if (hrs > 0) return `${hrs}h ${String(mins).padStart(2, '0')}m`;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function togglePrayerAlarm(prayerId) {
+      const p = state.prayers.find(item => item.id === prayerId);
+      if (!p) return;
+      p.alarmEnabled = !p.alarmEnabled;
+      if (p.alarmEnabled) {
+        p.nextAlarmAt = Date.now() + p.alarmIntervalMinutes * 60 * 1000;
+        showToast(`Alarm on (${formatIntervalLabel(p.alarmIntervalMinutes)})`);
+      } else {
+        showToast(`Alarm paused for ${p.name}`);
+      }
+      saveState();
+      renderAll();
+    }
+
+    function updatePrayerAlarmInterval(prayerId, newMinutes) {
+      const p = state.prayers.find(item => item.id === prayerId);
+      if (!p) return;
+      const mins = Math.max(1, parseInt(newMinutes, 10) || 60);
+      p.alarmIntervalMinutes = mins;
+      p.alarmEnabled = true;
+      p.nextAlarmAt = Date.now() + mins * 60 * 1000;
+      saveState();
+      showToast(`Reminder set to ${formatIntervalLabel(mins)}`);
+      renderAll();
+    }
+
+    function promptCustomMinutes(prayerId) {
+      const p = state.prayers.find(item => item.id === prayerId);
+      if (!p) return;
+      const customBox = document.getElementById(`custom-min-box-${prayerId}`);
+      if (customBox) {
+        customBox.classList.toggle('hidden');
+      }
+    }
+
+    function applyCustomMinutes(prayerId) {
+      const input = document.getElementById(`custom-min-input-${prayerId}`);
+      if (!input) return;
+      const val = parseInt(input.value, 10);
+      if (val && val >= 1 && val <= 1440) {
+        updatePrayerAlarmInterval(prayerId, val);
+      } else {
+        showToast('Enter minutes between 1 and 1440');
+      }
+    }
+
+    function checkAlarmsTick() {
+      const now = Date.now();
+      let updated = false;
+
+      state.prayers.forEach(p => {
+        if (!p.alarmEnabled) return;
+        const stats = getPrayerTodayStats(p.id);
+        // Only trigger alarm if there are remaining prayers left for today
+        if (stats.remaining > 0 && now >= p.nextAlarmAt) {
+          // Schedule next interval
+          p.nextAlarmAt = now + p.alarmIntervalMinutes * 60 * 1000;
+          updated = true;
+          fireAlarmForPrayer(p, stats.remaining);
+        }
+      });
+
+      if (updated) saveState();
+
+      // Update live countdown texts without full re-render
+      state.prayers.forEach(p => {
+        const el = document.getElementById(`countdown-${p.id}`);
+        if (el) {
+          el.textContent = p.alarmEnabled ? formatCountdown(p.nextAlarmAt - now) : 'Paused';
+        }
+      });
+
+      const activeP = state.prayers.find(p => p.id === state.activePrayerId);
+      const badgeText = document.getElementById('counter-next-alarm-text');
+      if (activeP && badgeText) {
+        badgeText.textContent = activeP.alarmEnabled
+          ? `${formatIntervalLabel(activeP.alarmIntervalMinutes)} (${formatCountdown(activeP.nextAlarmAt - now)})`
+          : 'Alarm Off';
+      }
+    }
+
+    function fireAlarmForPrayer(prayer, remainingCount) {
+      ringingPrayerId = prayer.id;
+      document.getElementById('alarm-modal-prayer-name').textContent = prayer.name;
+      document.getElementById('alarm-modal-message').innerHTML =
+        `You have <span class="font-extrabold text-emerald-700 dark:text-emerald-400">${remainingCount}</span> recitations remaining for today.`;
+      document.getElementById('alarm-ring-modal').classList.remove('hidden');
+
+      playAlarmChime();
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 300]);
+      }
+
+      // Send OS/Browser notification if permitted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(`Prayer Tracker Reminder: ${prayer.name}`, {
+            body: `${remainingCount} remaining today. Tap to continue reciting.`,
+          });
+        } catch (e) {}
+      }
+    }
+
+    function triggerTestAlarm() {
+      // Find a prayer with remaining count, or fallback to active prayer
+      let targetPrayer = state.prayers.find(p => getPrayerTodayStats(p.id).remaining > 0)
+        || state.prayers.find(p => p.id === state.activePrayerId)
+        || state.prayers[0];
+      if (!targetPrayer) return;
+      const stats = getPrayerTodayStats(targetPrayer.id);
+      fireAlarmForPrayer(targetPrayer, stats.remaining);
+    }
+
+    function dismissAlarmModal() {
+      document.getElementById('alarm-ring-modal').classList.add('hidden');
+      ringingPrayerId = null;
+    }
+
+    function reciteFromAlarm() {
+      const targetId = ringingPrayerId || state.activePrayerId;
+      dismissAlarmModal();
+      selectActivePrayer(targetId, true);
+    }
+
+    function requestNotificationPermission() {
+      if (!('Notification' in window)) {
+        showToast('Browser notifications not supported here');
+        return;
+      }
+      Notification.requestPermission().then(perm => {
+        updateNotifPermissionUI();
+        if (perm === 'granted') {
+          showToast('Notifications enabled!');
+        }
+      });
+    }
+
+    function updateNotifPermissionUI() {
+      const card = document.getElementById('notif-permission-card');
+      const statusText = document.getElementById('notif-status-text');
+      const btn = document.getElementById('btn-request-notif');
+      if (!('Notification' in window)) {
+        card.classList.add('hidden');
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        statusText.textContent = 'Active: You will receive reminders for remaining prayers.';
+        btn.textContent = 'Enabled';
+        btn.disabled = true;
+        btn.classList.add('opacity-60');
+      } else if (Notification.permission === 'denied') {
+        statusText.textContent = 'Blocked in browser settings. In-app alarms still work.';
+        btn.classList.add('hidden');
+      }
+    }
+
+    // =========================================================================
+    // 6. ANALYTICS: DAILY, WEEKLY & MONTHLY PROGRESS
+    // =========================================================================
+    function setProgressRange(range) {
+      state.progressRange = range;
+      ['day', 'week', 'month'].forEach(r => {
+        const btn = document.getElementById(`prog-tab-${r}`);
+        if (r === range) {
+          btn.className = 'py-2 text-xs font-bold rounded-lg bg-white dark:bg-slate-700 text-emerald-800 dark:text-white shadow-sm transition';
+        } else {
+          btn.className = 'py-2 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-400 transition';
+        }
+      });
+      renderProgressView();
+    }
+
+    function getDayTotals(dateKey) {
+      const dayLog = state.logs[dateKey];
+      let done = 0;
+      let target = 0;
+
+      if (dayLog) {
+        state.prayers.forEach(p => {
+          const entry = dayLog[p.id];
+          if (entry) {
+            done += entry.done || 0;
+            target += entry.target || p.target;
+          } else if (dateKey === getTodayKey()) {
+            target += p.target;
+          }
+        });
+      } else if (dateKey === getTodayKey()) {
+        state.prayers.forEach(p => {
+          target += p.target;
+        });
+      }
+
+      const remaining = Math.max(0, target - done);
+      return { done, target, remaining };
+    }
+
+    function calculateStreak() {
+      let streak = 0;
+      for (let i = 0; i < 60; i++) {
+        const key = getDayTotals(getTodayKey(-i));
+        if (key.done > 0) {
+          streak++;
+        } else if (i > 0) {
+          break;
+        }
+      }
+      return streak;
+    }
+
+    function seedSampleHistory() {
+      // Populate realistic done/remaining logs for the past 29 days
+      for (let i = 1; i <= 29; i++) {
+        const key = getTodayKey(-i);
+        state.logs[key] = {};
+        state.prayers.forEach((p, idx) => {
+          // Vary completion between 55% and 100%
+          const factor = ((i * 7 + idx * 13) % 5 === 0) ? 1.0 : (0.55 + ((i + idx) % 4) * 0.12);
+          const done = Math.min(p.target, Math.round(p.target * factor));
+          state.logs[key][p.id] = { done, target: p.target };
+        });
+      }
+      saveState();
+      showToast('Loaded 30-day sample history');
+      renderProgressView();
+    }
+
+    function renderProgressView() {
+      const range = state.progressRange;
+      let totalDone = 0;
+      let totalTarget = 0;
+      let totalRemaining = 0;
+      const buckets = []; // { label, done, remaining, target }
+
+      if (range === 'day') {
+        const todayKey = getTodayKey();
+        const totals = getDayTotals(todayKey);
+        totalDone = totals.done;
+        totalTarget = totals.target;
+        totalRemaining = totals.remaining;
+        document.getElementById('chart-title').textContent = "Today's Prayer Completion";
+
+        state.prayers.forEach(p => {
+          const s = getPrayerTodayStats(p.id);
+          buckets.push({
+            label: p.name,
+            done: s.done,
+            remaining: s.remaining,
+            target: s.target
+          });
+        });
+      } else if (range === 'week') {
+        document.getElementById('chart-title').textContent = 'Last 7 Days (Done vs. Left)';
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        for (let i = 6; i >= 0; i--) {
+          const key = getTodayKey(-i);
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const totals = getDayTotals(key);
+          totalDone += totals.done;
+          totalTarget += totals.target;
+          totalRemaining += totals.remaining;
+          buckets.push({
+            label: i === 0 ? 'Today' : dayNames[d.getDay()],
+            done: totals.done,
+            remaining: totals.remaining,
+            target: totals.target
+          });
+        }
+      } else {
+        // Month: last 30 days grouped into 4 weeks (W1..W4) + Last 7d
+        document.getElementById('chart-title').textContent = '30-Day Monthly Overview (4 Weeks)';
+        for (let w = 3; w >= 0; w--) {
+          let wDone = 0, wRem = 0, wTarget = 0;
+          const startOffset = w * 7 + 6;
+          const endOffset = w * 7;
+          for (let dOff = startOffset; dOff >= endOffset; dOff--) {
+            const totals = getDayTotals(getTodayKey(-dOff));
+            wDone += totals.done;
+            wRem += totals.remaining;
+            wTarget += totals.target;
+          }
+          totalDone += wDone;
+          totalRemaining += wRem;
+          totalTarget += wTarget;
+          buckets.push({
+            label: w === 0 ? 'This Wk' : `${w}w ago`,
+            done: wDone,
+            remaining: wRem,
+            target: wTarget
+          });
+        }
+      }
+
+      const pct = totalTarget > 0 ? Math.min(100, Math.round((totalDone / totalTarget) * 100)) : 0;
+      document.getElementById('stat-done').textContent = totalDone.toLocaleString();
+      document.getElementById('stat-remaining').textContent = totalRemaining.toLocaleString();
+      document.getElementById('stat-rate').textContent = `${pct}%`;
+      document.getElementById('stat-streak').textContent = `${calculateStreak()}d streak`;
+
+      // Render Bar Chart
+      const chartArea = document.getElementById('progress-chart-area');
+      const maxVal = Math.max(1, ...buckets.map(b => b.done + b.remaining));
+
+      if (range === 'day') {
+        // Horizontal stacked bars for Today's prayers
+        chartArea.innerHTML = `<div class="space-y-3">` + buckets.map(b => {
+          const total = Math.max(1, b.done + b.remaining);
+          const donePct = Math.min(100, Math.round((b.done / total) * 100));
+          return `
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[55%]">${escapeHtml(b.label)}</span>
+                <span class="text-slate-500 dark:text-slate-400 font-medium">${b.done} done · <span class="text-amber-600 dark:text-amber-400 font-semibold">${b.remaining} left</span></span>
+              </div>
+              <div class="w-full h-3 bg-amber-200/60 dark:bg-amber-900/30 rounded-full overflow-hidden flex">
+                <div class="h-full bg-emerald-600 transition-all duration-300" style="width: ${donePct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('') + `</div>`;
+      } else {
+        // Vertical stacked column chart for Week / Month
+        chartArea.innerHTML = `
+          <div class="h-40 flex items-end justify-between gap-2 pt-4 pb-1 px-1">
+            ${buckets.map(b => {
+              const doneH = Math.round((b.done / maxVal) * 110);
+              const remH = Math.round((b.remaining / maxVal) * 110);
+              return `
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">${b.done}</div>
+                  <div class="w-full max-w-[34px] flex flex-col-reverse rounded-t-lg overflow-hidden bg-stone-100 dark:bg-slate-700/40">
+                    <div style="height: ${doneH}px" class="w-full bg-emerald-600 transition-all duration-300"></div>
+                    <div style="height: ${remH}px" class="w-full bg-amber-400/85 transition-all duration-300"></div>
+                  </div>
+                  <div class="text-[10px] font-semibold text-slate-600 dark:text-slate-300 mt-1.5">${b.label}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      // Per-prayer breakdown summary for selected range
+      const daysCount = range === 'day' ? 1 : (range === 'week' ? 7 : 28);
+      const breakdownEl = document.getElementById('prayer-breakdown-list');
+      breakdownEl.innerHTML = state.prayers.map(p => {
+        let pDone = 0;
+        let pTarget = 0;
+        for (let i = 0; i < daysCount; i++) {
+          const k = getTodayKey(-i);
+          const entry = state.logs[k]?.[p.id];
+          if (entry) {
+            pDone += entry.done || 0;
+            pTarget += entry.target || p.target;
+          } else if (i === 0) {
+            pTarget += p.target;
+          }
+        }
+        const pRem = Math.max(0, pTarget - pDone);
+        const pPct = pTarget > 0 ? Math.min(100, Math.round((pDone / pTarget) * 100)) : 0;
+
+        return `
+          <div class="flex items-center justify-between text-xs border-b border-stone-100 dark:border-slate-700/70 pb-2.5 last:border-0 last:pb-0">
+            <div>
+              <div class="font-bold text-slate-800 dark:text-white">${escapeHtml(p.name)}</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">Done: <strong class="text-emerald-700 dark:text-emerald-400">${pDone}</strong> · Left: <strong class="text-amber-600 dark:text-amber-400">${pRem}</strong></div>
+            </div>
+            <div class="text-right">
+              <span class="inline-block px-2.5 py-1 rounded-full font-bold text-[11px] ${pPct >= 100 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-stone-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}">
+                ${pPct}%
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 7. UI RENDERING & NAVIGATION
+    // =========================================================================
+    function switchTab(tabName) {
+      state.currentTab = tabName;
+      const views = ['prayers', 'counter', 'progress', 'reminders'];
+      views.forEach(v => {
+        const sec = document.getElementById(`view-${v}`);
+        const nav = document.getElementById(`nav-${v}`);
+        if (v === tabName) {
+          sec.classList.remove('hidden');
+          if (v === 'counter') sec.classList.add('flex');
+          nav.classList.remove('text-slate-400', 'dark:text-slate-500');
+          nav.classList.add('text-emerald-700', 'dark:text-emerald-400');
+        } else {
+          sec.classList.add('hidden');
+          sec.classList.remove('flex');
+          nav.classList.add('text-slate-400', 'dark:text-slate-500');
+          nav.classList.remove('text-emerald-700', 'dark:text-emerald-400');
+        }
+      });
+
+      if (tabName === 'progress') renderProgressView();
+      if (tabName === 'reminders') updateNotifPermissionUI();
+    }
+
+    function renderTopSummary() {
+      const todayTotals = getDayTotals(getTodayKey());
+      const pct = todayTotals.target > 0 ? Math.min(100, Math.round((todayTotals.done / todayTotals.target) * 100)) : 0;
+      document.getElementById('top-total-done').textContent = todayTotals.done;
+      document.getElementById('top-total-remaining').textContent = todayTotals.remaining;
+      document.getElementById('top-total-pct').textContent = `${pct}%`;
+
+      const anyAlarm = state.prayers.some(p => p.alarmEnabled);
+      document.getElementById('nav-alarm-dot').classList.toggle('hidden', !anyAlarm);
+    }
+
+    function renderPrayersList() {
+      const container = document.getElementById('prayers-list-container');
+      container.innerHTML = state.prayers.map(p => {
+        const stats = getPrayerTodayStats(p.id);
+        const pct = Math.min(100, Math.round((stats.done / stats.target) * 100));
+        const isDone = stats.remaining === 0;
+
+        return `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border ${isDone ? 'border-emerald-300 dark:border-emerald-700/70' : 'border-stone-200/80 dark:border-slate-700'} transition">
+            <div class="flex items-start justify-between gap-2">
+              <div onclick="selectActivePrayer('${p.id}', true)" class="flex-1 cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-bold text-base text-slate-900 dark:text-white">${escapeHtml(p.name)}</h3>
+                  ${isDone ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">Completed</span>` : ''}
+                </div>
+                ${p.arabic ? `<p class="font-arabic text-lg text-emerald-800 dark:text-amber-300 mt-0.5">${escapeHtml(p.arabic)}</p>` : ''}
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Daily Target: <strong>${stats.target}</strong> · Done: <strong class="text-emerald-700 dark:text-emerald-400">${stats.done}</strong>
+                </p>
+              </div>
+
+              <div class="flex flex-col items-end gap-1.5">
+                <div class="flex items-center gap-1">
+                  <button onclick="openPrayerModal('${p.id}')" title="Edit Prayer" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-stone-100 dark:hover:bg-slate-700 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                  </button>
+                  <button onclick="promptRemovePrayer('${p.id}')" title="Remove Prayer" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="text-right">
+                  <span class="text-lg font-extrabold ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}">${stats.remaining}</span>
+                  <span class="block text-[10px] font-semibold uppercase text-slate-400">Left</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-3 w-full h-2 bg-stone-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-emerald-600 to-amber-500 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+            </div>
+
+            <!-- Footer Row: Alarm Info + Recite Quick Action -->
+            <div class="mt-3 pt-2.5 border-t border-stone-100 dark:border-slate-700/70 flex items-center justify-between">
+              <span class="inline-flex items-center gap-1 text-[11px] font-medium ${p.alarmEnabled ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'}">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                ${p.alarmEnabled ? formatIntervalLabel(p.alarmIntervalMinutes) : 'Alarm Off'}
+              </span>
+
+              <button onclick="selectActivePrayer('${p.id}', true)" class="inline-flex items-center gap-1 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-xl shadow-xs active:scale-95 transition">
+                <span>Count (-1)</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCounterView() {
+      const select = document.getElementById('counter-prayer-select');
+      select.innerHTML = state.prayers.map(p => {
+        const s = getPrayerTodayStats(p.id);
+        return `<option value="${p.id}" ${p.id === state.activePrayerId ? 'selected' : ''}>${escapeHtml(p.name)} (${s.remaining} remaining)</option>`;
+      }).join('');
+
+      const active = state.prayers.find(p => p.id === state.activePrayerId) || state.prayers[0];
+      if (!active) return;
+
+      const stats = getPrayerTodayStats(active.id);
+      const phraseCard = document.getElementById('counter-phrase-card');
+      const arabicEl = document.getElementById('counter-arabic');
+      const translitEl = document.getElementById('counter-translit');
+
+      if (active.arabic || active.note) {
+        phraseCard.classList.remove('hidden');
+        arabicEl.textContent = active.arabic || active.name;
+        translitEl.textContent = active.note || `Daily Goal: ${active.target}`;
+      } else {
+        phraseCard.classList.add('hidden');
+      }
+
+      document.getElementById('counter-remaining-num').textContent = stats.remaining;
+      document.getElementById('counter-completed-badge').textContent = `${stats.done} / ${stats.target} Done`;
+
+      // Update SVG Ring (circumference = 2 * pi * 78 ≈ 490.09)
+      const circumference = 490.09;
+      const progressRatio = Math.min(1, stats.done / stats.target);
+      const offset = circumference * (1 - progressRatio);
+      document.getElementById('counter-progress-ring').style.strokeDashoffset = offset;
+    }
+
+    function renderRemindersView() {
+      const container = document.getElementById('reminders-list-container');
+      const now = Date.now();
+
+      container.innerHTML = state.prayers.map(p => {
+        const stats = getPrayerTodayStats(p.id);
+        const presets = [15, 30, 60, 120, 180];
+        const isCustom = !presets.includes(p.alarmIntervalMinutes);
+
+        return `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-stone-200/80 dark:border-slate-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white">${escapeHtml(p.name)}</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Remaining today: <strong class="text-amber-600 dark:text-amber-400">${stats.remaining}</strong> / ${stats.target}
+                </p>
+              </div>
+
+              <!-- Toggle Switch -->
+              <button onclick="togglePrayerAlarm('${p.id}')" class="w-12 h-7 rounded-full transition-colors p-1 ${p.alarmEnabled ? 'bg-emerald-600' : 'bg-stone-300 dark:bg-slate-600'}">
+                <div class="w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform ${p.alarmEnabled ? 'translate-x-5' : 'translate-x-0'}"></div>
+              </button>
+            </div>
+
+            <!-- Interval Quick Select Pills -->
+            <div class="flex flex-wrap gap-1.5">
+              ${presets.map(m => {
+                const label = m < 60 ? `${m}m` : `${m / 60}h`;
+                const selected = p.alarmEnabled && p.alarmIntervalMinutes === m;
+                return `
+                  <button onclick="updatePrayerAlarmInterval('${p.id}', ${m})" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${selected ? 'bg-emerald-700 text-white shadow-xs' : 'bg-stone-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-stone-200'}">
+                    Every ${label}
+                  </button>
+                `;
+              }).join('')}
+              <button onclick="promptCustomMinutes('${p.id}')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${p.alarmEnabled && isCustom ? 'bg-amber-600 text-white' : 'bg-stone-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}">
+                ${p.alarmEnabled && isCustom ? `Custom (${p.alarmIntervalMinutes}m)` : 'Custom'}
+              </button>
+            </div>
+
+            <!-- Custom Minutes Input Box -->
+            <div id="custom-min-box-${p.id}" class="hidden flex items-center gap-2 pt-1">
+              <input type="number" id="custom-min-input-${p.id}" min="1" max="1440" value="${p.alarmIntervalMinutes}" placeholder="Minutes" class="w-28 px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-slate-700 border border-stone-300 dark:border-slate-600 text-xs font-bold text-slate-900 dark:text-white" />
+              <span class="text-xs text-slate-500">minutes</span>
+              <button onclick="applyCustomMinutes('${p.id}')" class="ml-auto px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-bold">Set</button>
+            </div>
+
+            <!-- Live Countdown Footer -->
+            <div class="pt-2 border-t border-stone-100 dark:border-slate-700/70 flex items-center justify-between text-xs">
+              <span class="text-slate-500 dark:text-slate-400">Next reminder in:</span>
+              <span id="countdown-${p.id}" class="font-mono font-bold ${p.alarmEnabled ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'}">
+                ${p.alarmEnabled ? formatCountdown(p.nextAlarmAt - now) : 'Paused'}
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAll() {
+      renderProfileUI();
+      renderTopSummary();
+      renderPrayersList();
+      renderCounterView();
+      renderRemindersView();
+      if (state.currentTab === 'progress') {
+        renderProgressView();
+      }
+    }
+
+    // =========================================================================
+    // 8. SIMPLE NAME LOGIN, PERSISTENT PROFILE & RESET / REMOVE ACTIONS
+    // =========================================================================
+    function renderProfileUI() {
+      const loginScreen = document.getElementById('login-screen');
+      const headerNameEl = document.getElementById('header-profile-name');
+      const savedName = (state.userName || '').trim();
+
+      if (!savedName) {
+        loginScreen.classList.remove('hidden');
+      } else {
+        loginScreen.classList.add('hidden');
+        headerNameEl.textContent = savedName;
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('login-name-input');
+      const name = input.value.trim();
+      if (!name) return;
+
+      state.userName = name;
+      saveState();
+      renderProfileUI();
+      showToast(`Assalamu Alaikum, ${name}!`);
+    }
+
+    function openProfileModal() {
+      document.getElementById('profile-name-input').value = state.userName || '';
+      document.getElementById('profile-modal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profile-modal').classList.add('hidden');
+    }
+
+    function saveProfileName(e) {
+      e.preventDefault();
+      const newName = document.getElementById('profile-name-input').value.trim();
+      if (!newName) return;
+      state.userName = newName;
+      saveState();
+      closeProfileModal();
+      renderProfileUI();
+      showToast(`Profile name updated to ${newName}`);
+    }
+
+    function logoutProfile() {
+      closeProfileModal();
+      state.userName = '';
+      saveState();
+      document.getElementById('login-name-input').value = '';
+      renderProfileUI();
+    }
+
+    // Reset Counts to 0
+    function openResetConfirmModal(target = 'all') {
+      pendingResetTarget = target;
+      document.getElementById('reset-confirm-modal').classList.remove('hidden');
+    }
+
+    function closeResetConfirmModal() {
+      document.getElementById('reset-confirm-modal').classList.add('hidden');
+    }
+
+    function executeResetCounts() {
+      ensureTodayLogs();
+      const today = getTodayKey();
+      if (pendingResetTarget === 'all') {
+        state.prayers.forEach(p => {
+          state.logs[today][p.id] = { done: 0, target: p.target };
+        });
+        showToast('All prayer counts reset to 0');
+      } else {
+        const p = state.prayers.find(item => item.id === pendingResetTarget);
+        if (p) {
+          state.logs[today][p.id] = { done: 0, target: p.target };
+          showToast(`${p.name} count reset to 0`);
+        }
+      }
+      saveState();
+      closeResetConfirmModal();
+      renderAll();
+    }
+
+    // Direct Remove Prayer from List
+    function promptRemovePrayer(prayerId) {
+      if (state.prayers.length <= 1) {
+        showToast('At least one prayer must remain in the list.');
+        return;
+      }
+      const p = state.prayers.find(item => item.id === prayerId);
+      if (!p) return;
+      pendingRemovePrayerId = prayerId;
+      document.getElementById('remove-prayer-desc').textContent =
+        `Are you sure you want to remove "${p.name}" from your prayers?`;
+      document.getElementById('remove-prayer-modal').classList.remove('hidden');
+    }
+
+    function closeRemovePrayerModal() {
+      document.getElementById('remove-prayer-modal').classList.add('hidden');
+      pendingRemovePrayerId = null;
+    }
+
+    function confirmRemovePrayer() {
+      if (!pendingRemovePrayerId || state.prayers.length <= 1) {
+        closeRemovePrayerModal();
+        return;
+      }
+      const removed = state.prayers.find(p => p.id === pendingRemovePrayerId);
+      state.prayers = state.prayers.filter(p => p.id !== pendingRemovePrayerId);
+      if (state.activePrayerId === pendingRemovePrayerId) {
+        state.activePrayerId = state.prayers[0].id;
+      }
+      saveState();
+      closeRemovePrayerModal();
+      showToast(`Removed "${removed ? removed.name : 'Prayer'}"`);
+      renderAll();
+    }
+
+    // =========================================================================
+    // 9. UTILITIES (THEME, SOUND, TOAST, ESCAPE)
+    // =========================================================================
+    // 8. UTILITIES (THEME, SOUND, TOAST, ESCAPE)
+    // =========================================================================
+    function applyThemeAndSoundUI() {
+      const htmlEl = document.documentElement;
+      if (state.darkMode) {
+        htmlEl.classList.add('dark');
+        document.getElementById('icon-moon').classList.add('hidden');
+        document.getElementById('icon-sun').classList.remove('hidden');
+      } else {
+        htmlEl.classList.remove('dark');
+        document.getElementById('icon-moon').classList.remove('hidden');
+        document.getElementById('icon-sun').classList.add('hidden');
+      }
+
+      document.getElementById('icon-sound-on').classList.toggle('hidden', !state.soundEnabled);
+      document.getElementById('icon-sound-off').classList.toggle('hidden', state.soundEnabled);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toast-banner');
+      document.getElementById('toast-text').textContent = msg;
+      banner.classList.remove('opacity-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('opacity-0');
+      }, 2400);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // =========================================================================
+    // 9. INITIALIZATION
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+
+      // Format header date
+      const now = new Date();
+      document.getElementById('header-date').textContent = now.toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      // Theme & Sound event listeners
+      document.getElementById('btn-theme-toggle').addEventListener('click', () => {
+        state.darkMode = !state.darkMode;
+        saveState();
+        applyThemeAndSoundUI();
+      });
+
+      document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        saveState();
+        applyThemeAndSoundUI();
+        showToast(state.soundEnabled ? 'Sound & Chimes On' : 'Muted');
+      });
+
+      applyThemeAndSoundUI();
+      renderAll();
+      switchTab(state.currentTab || 'prayers');
+
+      // Start 1-second timer for alarm checks & live countdowns
+      setInterval(checkAlarmsTick, 1000);
+    });
+  </script>
+</body>
+</html>
